@@ -1,4 +1,4 @@
-import { userSchema } from "../models/userModels";
+import { userSchema } from "../models/userModels.mjs";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
@@ -29,7 +29,7 @@ export const createUser = async (req, res) => {
     // get the user with the email
     const existingUser = await userSchema.findUnique({
       where: {
-        user_email: email,
+        email: email,
       },
     });
 
@@ -42,12 +42,14 @@ export const createUser = async (req, res) => {
     }
 
     // hash the password
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
-    // store the user
+    // store the new user
     await userSchema.create({
       data: {
-        user_name: username,
+        username: username,
+        email: email,
+        password: hashedPassword,
       },
     });
 
@@ -56,6 +58,7 @@ export const createUser = async (req, res) => {
       message: "The user has been created successfully",
     });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({
       success: false,
       error: error,
@@ -71,12 +74,10 @@ export const createUser = async (req, res) => {
  * @returns hash
  */
 
-// function to hash the password
-
-const hashPassword = (plainTextPassword) => {
-  const hashedPassword = bcrypt.genSalt(saltRounds, function (err, salt) {
-    bcrypt.hash(plainTextPassword, salt, function (err, hash) {});
-  });
+// Asynchronous function to hash the password
+const hashPassword = async (plainTextPassword) => {
+  const salt = await bcrypt.genSalt(saltRounds);
+  const hashedPassword = await bcrypt.hash(plainTextPassword, salt);
   return hashedPassword;
 };
 

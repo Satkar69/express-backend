@@ -12,6 +12,9 @@ app.listen(PORT, () => {
 
 app.use(requestMiddleware);
 
+// body parser for request body
+app.use(express.json());
+
 app.get("/", (req, res) => {
   res.send("Hello World");
 });

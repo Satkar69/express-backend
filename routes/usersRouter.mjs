@@ -1,9 +1,12 @@
 import { Router } from "express";
+import { getUsers, createUser } from "../controllers/userControllers.mjs";
 
 const router = Router();
 
-router.get("/users", (req, res) => {
-  res.send("Hello this is users route");
-});
+// route to read the users
+router.get("/", getUsers);
+
+// route to create user
+router.post("/register", createUser);
 
 export default router;
