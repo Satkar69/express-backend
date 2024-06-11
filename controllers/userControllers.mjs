@@ -5,6 +5,9 @@ import bcrypt from "bcrypt";
 // cost factor which determines how much time is needed to calculate a single bcrypt hash
 const saltRounds = 10;
 
+// jwt secret to sign the token
+const jwtSecretKey = process.env.JWT_SECRET;
+
 /**
  * @param {*} req --> '{*}' tells req can be of any type
  * @param {*} res
@@ -61,7 +64,6 @@ export const createUser = async (req, res) => {
     console.log(error);
     return res.status(500).json({
       success: false,
-      error: error,
       message: "Internal Server Error",
     });
   }
@@ -99,7 +101,82 @@ export const getUsers = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: error,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+/**
+ *
+ * @param {*} plainTextPassword
+ * @param {*} hashedPassword
+ * @returns boolean
+ */
+
+// Asynchronous function to hash the password
+const comparePassword = async (plainTextPassword, hashedPassword) => {
+  return bcrypt.compare(
+    plainTextPassword,
+    hashedPassword,
+    function (err, result) {}
+  );
+};
+
+/**
+ * @param {*} req --> '{*}' tells req can be of any type
+ * @param {*} res
+ * @returns String
+ */
+
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "Please enter the required fields",
+    });
+  }
+
+  try {
+    const existingUser = await userSchema.findUnique({
+      where: {
+        email: email,
+      },
+    });
+
+    // check if the email exists
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: `The user with the email'${email}' does not exist`,
+      });
+    }
+
+    // check if the hash of the password matches the hash stored in db
+    const checkPassword = await comparePassword(
+      password,
+      existingUser.password
+    );
+    if (!checkPassword) {
+      return res.status(401).json({
+        success: false,
+        message: "The password you have entered is incorrect",
+      });
+    }
+
+    // generate jwt token
+    const token = jwt.sign({ user_id: existingUser.id }, jwtSecretKey, {
+      expiresIn: "1h",
+    });
+
+    return res.status(201).json({
+      success: true,
+      token,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
       message: "Internal Server Error",
     });
   }
